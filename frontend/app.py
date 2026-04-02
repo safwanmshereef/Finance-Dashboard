@@ -52,6 +52,10 @@ st.markdown(
           radial-gradient(circle at 10% 0%, rgba(14, 165, 168, 0.20), transparent 32%),
           radial-gradient(circle at 92% 6%, rgba(251, 146, 60, 0.18), transparent 30%),
           linear-gradient(180deg, var(--bg-a) 0%, var(--bg-b) 100%);
+        color: var(--ink);
+    }
+    .stApp, .main, section[data-testid="stMain"], section[data-testid="stSidebar"] {
+        color: var(--ink);
     }
     .block-container {
         max-width: 1180px;
@@ -121,6 +125,10 @@ st.markdown(
         color: #0c4a6e;
         font-size: 0.84rem;
     }
+    .stMarkdown, .stMarkdown p, .stMarkdown li, .stMarkdown span,
+    .stText, .stCaption, .stInfo, .stSuccess, .stWarning, .stError {
+        color: var(--ink) !important;
+    }
     section.main [data-testid="stWidgetLabel"] p,
     section.main label {
         color: var(--ink) !important;
@@ -138,7 +146,10 @@ st.markdown(
     section.main span,
     section.main [data-testid="stMarkdownContainer"] p,
     section.main [data-testid="stMarkdownContainer"] li,
-    section.main [data-testid="stHeadingWithActionElements"] {
+    section.main [data-testid="stHeadingWithActionElements"],
+    section.main [data-testid="stAlertContainer"] *,
+    section.main [data-testid="stMetricValue"],
+    section.main [data-testid="stMetricLabel"] {
         color: var(--ink) !important;
         opacity: 1 !important;
     }
@@ -192,6 +203,11 @@ st.markdown(
     section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
     section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] li,
     section[data-testid="stSidebar"] [data-testid="stHeadingWithActionElements"] {
+        color: #f1f5f9 !important;
+    }
+    section[data-testid="stSidebar"] [data-testid="stAlertContainer"] *,
+    section[data-testid="stSidebar"] [data-testid="stMetricValue"],
+    section[data-testid="stSidebar"] [data-testid="stMetricLabel"] {
         color: #f1f5f9 !important;
     }
     @media (max-width: 980px) {
@@ -282,7 +298,11 @@ def render_sidebar_auth_and_controls():
             data={"username": email, "password": password},
         )
         if error or data is None:
-            st.sidebar.error(f"Login failed: {error}")
+            if error and error.startswith("401:"):
+                st.sidebar.error(
+                    "Login failed: check the demo credentials or seed the database on the deployed backend.")
+            else:
+                st.sidebar.error(f"Login failed: {error}")
             return
 
         st.session_state.token = data["access_token"]

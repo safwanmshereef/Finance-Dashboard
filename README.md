@@ -201,6 +201,14 @@ Optional: run seed once in Render shell after deploy:
 python seed.py
 ```
 
+If Render shell is unavailable on your tier, set this backend env var instead and redeploy once:
+
+```text
+SEED_ON_STARTUP=true
+```
+
+After first successful deploy and login check, set it back to `false` (or remove it).
+
 ### 2) Configure frontend to use deployed backend
 
 In Streamlit Community Cloud app settings, add this secret:

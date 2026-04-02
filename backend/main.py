@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -24,6 +26,17 @@ app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(records.router)
 app.include_router(dashboard.router)
+
+
+@app.on_event("startup")
+def maybe_seed_on_startup():
+    if os.getenv("SEED_ON_STARTUP", "false").lower() != "true":
+        return
+
+    # This is idempotent and safe to run repeatedly for demo environments.
+    from seed import seed_users_and_records
+
+    seed_users_and_records()
 
 
 @app.get("/")

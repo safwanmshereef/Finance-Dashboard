@@ -53,6 +53,11 @@ README.md
 - `analyst@example.com` / `password123`
 - `viewer@example.com` / `password123`
 
+## Live links
+
+- Frontend demo: https://finance-dashboard-zorvyn.streamlit.app/
+- API docs: https://finance-dashboard-jfqn.onrender.com/docs
+
 ## Local setup
 
 ### 1) Backend

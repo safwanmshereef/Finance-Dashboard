@@ -59,11 +59,14 @@ def get_summary(
 
     dialect_name = db.bind.dialect.name if db.bind is not None else "sqlite"
     if dialect_name.startswith("postgresql"):
-        month_expr = func.to_char(FinancialRecord.date, "YYYY-MM").label("month")
+        month_expr = func.to_char(
+            FinancialRecord.date, "YYYY-MM").label("month")
     elif dialect_name.startswith("sqlite"):
-        month_expr = func.strftime("%Y-%m", FinancialRecord.date).label("month")
+        month_expr = func.strftime(
+            "%Y-%m", FinancialRecord.date).label("month")
     else:
-        month_expr = func.to_char(FinancialRecord.date, "YYYY-MM").label("month")
+        month_expr = func.to_char(
+            FinancialRecord.date, "YYYY-MM").label("month")
 
     trends_rows = (
         base_query.with_entities(

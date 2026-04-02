@@ -65,7 +65,7 @@ st.markdown(
         border-radius: 22px;
         padding: 1.3rem 1.4rem;
         background: linear-gradient(130deg, var(--brand-a), var(--brand-b));
-        color: #fff;
+        color: #fff !important;
         box-shadow: 0 16px 32px rgba(15, 23, 42, 0.22);
         margin-bottom: 1rem;
     }
@@ -73,10 +73,14 @@ st.markdown(
         margin: 0;
         font-family: 'Manrope', sans-serif;
         font-size: clamp(1.4rem, 2.4vw, 2rem);
+        color: #ffffff !important;
     }
     .hero p {
         margin: 0.45rem 0 0;
-        color: rgba(255, 255, 255, 0.92);
+        color: rgba(255, 255, 255, 0.92) !important;
+    }
+    .hero *, .hero code, .hero span {
+        color: #ffffff !important;
     }
     .kpi-grid {
         display: grid;
@@ -154,7 +158,7 @@ st.markdown(
         opacity: 1 !important;
     }
     section.main [data-testid="stCaptionContainer"] p {
-        color: var(--muted) !important;
+        color: #475569 !important;
         opacity: 1 !important;
     }
     section.main [data-baseweb="input"] input,

@@ -42,3 +42,8 @@ def maybe_seed_on_startup():
 @app.get("/")
 def health_check():
     return {"status": "ok", "service": "finance-backend"}
+
+
+@app.get("/healthz")
+def health_check_extended():
+    return {"status": "ok", "service": "finance-backend"}

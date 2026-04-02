@@ -57,14 +57,22 @@ def get_summary(
         .all()
     )
 
+    dialect_name = db.bind.dialect.name if db.bind is not None else "sqlite"
+    if dialect_name.startswith("postgresql"):
+        month_expr = func.to_char(FinancialRecord.date, "YYYY-MM").label("month")
+    elif dialect_name.startswith("sqlite"):
+        month_expr = func.strftime("%Y-%m", FinancialRecord.date).label("month")
+    else:
+        month_expr = func.to_char(FinancialRecord.date, "YYYY-MM").label("month")
+
     trends_rows = (
         base_query.with_entities(
-            func.strftime("%Y-%m", FinancialRecord.date).label("month"),
+            month_expr,
             FinancialRecord.type,
             func.sum(FinancialRecord.amount).label("total"),
         )
-        .group_by("month", FinancialRecord.type)
-        .order_by("month")
+        .group_by(month_expr, FinancialRecord.type)
+        .order_by(month_expr)
         .all()
     )
     trend_map = defaultdict(lambda: {"income": 0.0, "expense": 0.0})

@@ -1,7 +1,8 @@
 from collections import defaultdict
+from datetime import date
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -17,27 +18,39 @@ router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 def get_summary(
     _: Annotated[User, Depends(require_dashboard_access)],
     db: Annotated[Session, Depends(get_db)],
+    start_date: date | None = Query(default=None),
+    end_date: date | None = Query(default=None),
 ):
+    base_query = db.query(FinancialRecord)
+    if start_date:
+        base_query = base_query.filter(FinancialRecord.date >= start_date)
+    if end_date:
+        base_query = base_query.filter(FinancialRecord.date <= end_date)
+
     total_income = (
-        db.query(func.coalesce(func.sum(FinancialRecord.amount), 0.0))
+        base_query.with_entities(func.coalesce(
+            func.sum(FinancialRecord.amount), 0.0))
         .filter(FinancialRecord.type == "income")
         .scalar()
     )
     total_expenses = (
-        db.query(func.coalesce(func.sum(FinancialRecord.amount), 0.0))
+        base_query.with_entities(func.coalesce(
+            func.sum(FinancialRecord.amount), 0.0))
         .filter(FinancialRecord.type == "expense")
         .scalar()
     )
 
     income_by_category_rows = (
-        db.query(FinancialRecord.category, func.sum(FinancialRecord.amount))
+        base_query.with_entities(
+            FinancialRecord.category, func.sum(FinancialRecord.amount))
         .filter(FinancialRecord.type == "income")
         .group_by(FinancialRecord.category)
         .order_by(func.sum(FinancialRecord.amount).desc())
         .all()
     )
     expense_by_category_rows = (
-        db.query(FinancialRecord.category, func.sum(FinancialRecord.amount))
+        base_query.with_entities(
+            FinancialRecord.category, func.sum(FinancialRecord.amount))
         .filter(FinancialRecord.type == "expense")
         .group_by(FinancialRecord.category)
         .order_by(func.sum(FinancialRecord.amount).desc())
@@ -45,7 +58,7 @@ def get_summary(
     )
 
     trends_rows = (
-        db.query(
+        base_query.with_entities(
             func.strftime("%Y-%m", FinancialRecord.date).label("month"),
             FinancialRecord.type,
             func.sum(FinancialRecord.amount).label("total"),
@@ -59,12 +72,13 @@ def get_summary(
         trend_map[month][record_type] = float(total or 0.0)
 
     monthly_trends = [
-        schemas.TrendPoint(month=month, income=vals["income"], expenses=vals["expense"])
+        schemas.TrendPoint(
+            month=month, income=vals["income"], expenses=vals["expense"])
         for month, vals in sorted(trend_map.items())
     ]
 
     recent_records = (
-        db.query(FinancialRecord)
+        base_query
         .order_by(FinancialRecord.date.desc(), FinancialRecord.id.desc())
         .limit(5)
         .all()
@@ -82,6 +96,7 @@ def get_summary(
             schemas.CategoryTotal(category=row[0], total=float(row[1] or 0.0))
             for row in expense_by_category_rows
         ],
-        recent_records=[schemas.RecordOut.model_validate(record) for record in recent_records],
+        recent_records=[schemas.RecordOut.model_validate(
+            record) for record in recent_records],
         monthly_trends=monthly_trends,
     )

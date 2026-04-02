@@ -1,7 +1,7 @@
 # Finance Data Processing and Access Control Demo
 
 A full-stack internship assignment demo built with a decoupled architecture:
-- Backend API: FastAPI + SQLAlchemy + SQLite + JWT auth
+- Backend API: FastAPI + SQLAlchemy + Postgres/SQLite + JWT auth
 - Frontend dashboard: Streamlit + requests + pandas
 - Free deployment targets: Render (backend) + Streamlit Community Cloud (frontend)
 
@@ -12,7 +12,15 @@ A full-stack internship assignment demo built with a decoupled architecture:
 - Financial records CRUD with validation and filtering
 - Dashboard summary APIs for aggregates and trends
 - Clean error handling and HTTP status usage
-- Data persistence with SQLite
+- Data persistence with SQLite locally or Postgres in production
+
+## Newly added product features
+
+1. Date-range analytics controls on dashboard summary and trends
+2. Monthly budget tracker in the sidebar with utilization indicator
+3. Search-enabled records explorer using `q` across category and notes
+4. Quick insight cards for filtered records with count and totals
+5. One-click CSV export for the filtered records table
 
 ## Project structure
 
@@ -25,6 +33,7 @@ backend/
   security.py
   seed.py
   requirements.txt
+  .env
   routers/
     auth.py
     users.py
@@ -33,13 +42,12 @@ backend/
 frontend/
   app.py
   requirements.txt
+  .env
 LICENSE
 README.md
 ```
 
 ## Demo test accounts
-
-After running the seed script:
 
 - `admin@example.com` / `password123`
 - `analyst@example.com` / `password123`
@@ -83,29 +91,33 @@ streamlit run app.py
 
 Frontend runs at `http://localhost:8501`
 
-### 3) Configure frontend API URL via secrets or environment
+### 3) Local `.env` files
 
-The frontend reads API URL in this order:
-- `st.secrets["API_URL"]`
-- `API_URL` environment variable
-- fallback: `http://localhost:8000`
+These are already added in the repo for local development:
 
-Local options:
-
-1. PowerShell environment variable:
-
-```powershell
-$env:API_URL = "http://localhost:8000"
-streamlit run app.py
+Backend `[backend/.env](backend/.env)`
+```env
+DATABASE_URL=sqlite:///./finance.db
+SECRET_KEY=7f2c9e31d5b84a2e8c6f0b1a4d9e3c7f2a5b8e1c4d7f0a3b6e9c2d5f8a1b4c7
 ```
 
-2. Streamlit secrets file (`frontend/.streamlit/secrets.toml`):
-
-```toml
-API_URL = "http://localhost:8000"
+Frontend `[frontend/.env](frontend/.env)`
+```env
+API_URL=http://localhost:8000
 ```
 
-## Automated tests
+The app loads these automatically with `python-dotenv`.
+
+Optional: if you want local Postgres instead of SQLite, change `backend/.env` to:
+
+```env
+DATABASE_URL=postgresql://your_user:your_password@your_host:5432/your_db?sslmode=require
+SECRET_KEY=7f2c9e31d5b84a2e8c6f0b1a4d9e3c7f2a5b8e1c4d7f0a3b6e9c2d5f8a1b4c7
+```
+
+Then run `python seed.py` again so the database is populated.
+
+### 4) Tests
 
 ```bash
 cd backend
@@ -117,6 +129,7 @@ Test coverage includes:
 - register and login flow
 - role-based records permissions
 - dashboard summary aggregates
+- record and summary filter compatibility
 
 ## API overview
 
@@ -138,12 +151,14 @@ Test coverage includes:
 
 Filters supported in `GET /records`:
 - `category`
+- `q` (search text on category/notes)
 - `type` (`income` or `expense`)
 - `start_date` and `end_date`
 - pagination via `skip` and `limit`
 
 ### Dashboard
 - `GET /dashboard/summary` - totals, category splits, recent records, monthly trends (all active roles)
+- Optional query params: `start_date`, `end_date`
 
 ## Access control matrix
 
@@ -155,7 +170,7 @@ Filters supported in `GET /records`:
 
 - SQLite is used for simplicity and quick local testing.
 - Register endpoint allows role selection for demo speed. In production, role assignment should be admin-controlled only.
-- Single SQLite file (`backend/finance.db`) is enough for assignment/demo scope.
+- For free deployment, Render Postgres is recommended instead of a persistent disk.
 
 ## Free deployment guide
 
@@ -167,13 +182,20 @@ Filters supported in `GET /records`:
    - Root Directory: `backend`
    - Build Command: `pip install -r requirements.txt`
    - Start Command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-  - Environment variable: `SECRET_KEY` (set a long random value)
-  - Environment variable: `DATABASE_URL=sqlite:////var/data/finance.db`
-4. Add a **Persistent Disk** and mount path `/var/data`.
+4. Add environment variables:
+   - `SECRET_KEY` = `7f2c9e31d5b84a2e8c6f0b1a4d9e3c7f2a5b8e1c4d7f0a3b6e9c2d5f8a1b4c7`
+   - `DATABASE_URL` = paste the Render Postgres internal connection string
 5. Deploy.
 6. Visit `https://<your-render-url>/docs` for API docs.
 
-Optional: run seed once in Render shell:
+### 1b) Create the database on Render
+
+1. In Render, create a **New PostgreSQL** database.
+2. Copy the **Internal Database URL** from the database settings.
+3. Paste that value into the backend web service `DATABASE_URL` environment variable.
+4. If Render gives you a `postgres://...` URL, the app will automatically convert it for SQLAlchemy.
+
+Optional: run seed once in Render shell after deploy:
 
 ```bash
 python seed.py

@@ -1,3 +1,6 @@
+from database import Base
+import main
+import database
 from collections.abc import Generator
 from pathlib import Path
 import sys
@@ -10,10 +13,6 @@ from sqlalchemy.orm import sessionmaker
 # Ensure backend module imports resolve during tests.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import database
-import main
-from database import Base
-
 
 @pytest.fixture()
 def client(tmp_path: Path) -> Generator[TestClient, None, None]:
@@ -22,7 +21,8 @@ def client(tmp_path: Path) -> Generator[TestClient, None, None]:
         f"sqlite:///{db_file}",
         connect_args={"check_same_thread": False},
     )
-    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    TestingSessionLocal = sessionmaker(
+        autocommit=False, autoflush=False, bind=engine)
 
     Base.metadata.create_all(bind=engine)
 

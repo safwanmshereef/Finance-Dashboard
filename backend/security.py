@@ -7,9 +7,12 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
+from dotenv import load_dotenv
 
 from database import get_db
 from models import User
+
+load_dotenv()
 
 SECRET_KEY = os.getenv("SECRET_KEY", "change-this-in-production-demo-secret")
 ALGORITHM = "HS256"

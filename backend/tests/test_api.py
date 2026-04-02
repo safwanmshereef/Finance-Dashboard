@@ -75,7 +75,8 @@ def test_records_permissions(client):
     )
     assert create_by_viewer.status_code == 403
 
-    list_by_analyst = client.get("/records", headers=auth_header(analyst_token))
+    list_by_analyst = client.get(
+        "/records", headers=auth_header(analyst_token))
     assert list_by_analyst.status_code == 200
     assert len(list_by_analyst.json()) == 1
 
@@ -105,10 +106,13 @@ def test_summary_endpoint_returns_aggregates(client):
         "notes": "Monthly rent",
     }
 
-    assert client.post("/records", json=income_payload, headers=auth_header(admin_token)).status_code == 201
-    assert client.post("/records", json=expense_payload, headers=auth_header(admin_token)).status_code == 201
+    assert client.post("/records", json=income_payload,
+                       headers=auth_header(admin_token)).status_code == 201
+    assert client.post("/records", json=expense_payload,
+                       headers=auth_header(admin_token)).status_code == 201
 
-    summary_resp = client.get("/dashboard/summary", headers=auth_header(viewer_token))
+    summary_resp = client.get("/dashboard/summary",
+                              headers=auth_header(viewer_token))
     assert summary_resp.status_code == 200
 
     summary = summary_resp.json()
@@ -116,5 +120,55 @@ def test_summary_endpoint_returns_aggregates(client):
     assert summary["total_expenses"] == 300
     assert summary["net_balance"] == 700
     assert len(summary["recent_records"]) == 2
-    assert any(item["category"] == "Salary" for item in summary["by_category_income"])
-    assert any(item["category"] == "Rent" for item in summary["by_category_expense"])
+    assert any(item["category"] ==
+               "Salary" for item in summary["by_category_income"])
+    assert any(item["category"] ==
+               "Rent" for item in summary["by_category_expense"])
+
+
+def test_record_search_and_summary_date_filters(client):
+    register_user(client, "admin2@test.com", "password123", "admin")
+    register_user(client, "viewer2@test.com", "password123", "viewer")
+
+    admin_token = login_token(client, "admin2@test.com", "password123")
+    viewer_token = login_token(client, "viewer2@test.com", "password123")
+
+    jan_income = {
+        "amount": 2200,
+        "type": "income",
+        "category": "Consulting",
+        "date": date(2026, 1, 15).isoformat(),
+        "notes": "Client Alpha",
+    }
+    mar_expense = {
+        "amount": 500,
+        "type": "expense",
+        "category": "Travel",
+        "date": date(2026, 3, 10).isoformat(),
+        "notes": "Conference trip",
+    }
+
+    assert client.post("/records", json=jan_income,
+                       headers=auth_header(admin_token)).status_code == 201
+    assert client.post("/records", json=mar_expense,
+                       headers=auth_header(admin_token)).status_code == 201
+
+    search_resp = client.get(
+        "/records",
+        params={"q": "conference"},
+        headers=auth_header(admin_token),
+    )
+    assert search_resp.status_code == 200
+    search_data = search_resp.json()
+    assert len(search_data) == 1
+    assert search_data[0]["category"] == "Travel"
+
+    summary_resp = client.get(
+        "/dashboard/summary",
+        params={"start_date": "2026-01-01", "end_date": "2026-01-31"},
+        headers=auth_header(viewer_token),
+    )
+    assert summary_resp.status_code == 200
+    summary = summary_resp.json()
+    assert summary["total_income"] == 2200
+    assert summary["total_expenses"] == 0

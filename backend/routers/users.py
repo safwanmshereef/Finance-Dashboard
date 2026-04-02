@@ -54,7 +54,8 @@ def update_user(
         raise HTTPException(status_code=404, detail="User not found")
 
     if user.id == admin_user.id and update_in.status == "inactive":
-        raise HTTPException(status_code=400, detail="Admin cannot deactivate self")
+        raise HTTPException(
+            status_code=400, detail="Admin cannot deactivate self")
 
     if update_in.role is not None:
         user.role = update_in.role

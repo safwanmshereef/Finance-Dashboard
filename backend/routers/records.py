@@ -2,6 +2,7 @@ from datetime import date
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 import schemas
@@ -31,6 +32,7 @@ def list_records(
     db: Annotated[Session, Depends(get_db)],
     category: Optional[str] = None,
     type: Optional[schemas.RecordType] = None,
+    q: Optional[str] = None,
     start_date: Optional[date] = Query(default=None),
     end_date: Optional[date] = Query(default=None),
     skip: int = Query(default=0, ge=0),
@@ -42,6 +44,14 @@ def list_records(
         query = query.filter(FinancialRecord.category.ilike(f"%{category}%"))
     if type:
         query = query.filter(FinancialRecord.type == type)
+    if q:
+        like_query = f"%{q}%"
+        query = query.filter(
+            or_(
+                FinancialRecord.category.ilike(like_query),
+                FinancialRecord.notes.ilike(like_query),
+            )
+        )
     if start_date:
         query = query.filter(FinancialRecord.date >= start_date)
     if end_date:
@@ -56,7 +66,8 @@ def get_record(
     _: Annotated[User, Depends(require_analyst_or_admin)],
     db: Annotated[Session, Depends(get_db)],
 ):
-    record = db.query(FinancialRecord).filter(FinancialRecord.id == record_id).first()
+    record = db.query(FinancialRecord).filter(
+        FinancialRecord.id == record_id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
     return record
@@ -69,7 +80,8 @@ def update_record(
     _: Annotated[User, Depends(require_admin)],
     db: Annotated[Session, Depends(get_db)],
 ):
-    record = db.query(FinancialRecord).filter(FinancialRecord.id == record_id).first()
+    record = db.query(FinancialRecord).filter(
+        FinancialRecord.id == record_id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
 
@@ -88,7 +100,8 @@ def delete_record(
     _: Annotated[User, Depends(require_admin)],
     db: Annotated[Session, Depends(get_db)],
 ):
-    record = db.query(FinancialRecord).filter(FinancialRecord.id == record_id).first()
+    record = db.query(FinancialRecord).filter(
+        FinancialRecord.id == record_id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
 
